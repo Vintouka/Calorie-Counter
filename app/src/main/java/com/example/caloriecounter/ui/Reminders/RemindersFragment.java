@@ -10,18 +10,18 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.caloriecounter.databinding.FragmentNotificationsBinding;
+import com.example.caloriecounter.databinding.FragmentRemindersBinding;
 
 public class RemindersFragment extends Fragment {
 
-    private FragmentNotificationsBinding binding;
+    private FragmentRemindersBinding binding;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         RemindersViewModel notificationsViewModel =
                 new ViewModelProvider(this).get(RemindersViewModel.class);
 
-        binding = FragmentNotificationsBinding.inflate(inflater, container, false);
+        binding = FragmentRemindersBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
         final TextView textView = binding.textNotifications;

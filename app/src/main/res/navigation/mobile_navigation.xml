@@ -7,19 +7,19 @@
 
     <fragment
         android:id="@+id/navigation_home"
-        android:name="com.example.caloriecounter.ui.Overview.OverviewFragment"
+        android:name="com.example.caloriecounter.ui.Goals.GoalsFragment"
         android:label="@string/title_goals"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_goals" />
 
     <fragment
         android:id="@+id/navigation_dashboard"
-        android:name="com.example.caloriecounter.ui.Goals.GoalsFragment"
+        android:name="com.example.caloriecounter.ui.Overview.OverviewFragment"
         android:label="@string/title_overview"
-        tools:layout="@layout/fragment_dashboard" />
+        tools:layout="@layout/fragment_overview" />
 
     <fragment
         android:id="@+id/navigation_notifications"
         android:name="com.example.caloriecounter.ui.Reminders.RemindersFragment"
         android:label="@string/title_reminders"
-        tools:layout="@layout/fragment_notifications" />
+        tools:layout="@layout/fragment_reminders" />
 </navigation>
