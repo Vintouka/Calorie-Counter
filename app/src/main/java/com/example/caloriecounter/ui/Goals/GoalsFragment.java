@@ -19,6 +19,7 @@ import com.example.caloriecounter.databinding.FragmentGoalsBinding;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class GoalsFragment extends Fragment {
     private FragmentGoalsBinding binding;
@@ -35,21 +36,15 @@ public class GoalsFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        GoalsViewModel dashboardViewModel =
-                new ViewModelProvider(this).get(GoalsViewModel.class);
-
         binding = FragmentGoalsBinding.inflate(inflater, container, false);
 
         // Access the CalendarView via binding
         CalendarView calendarView = binding.calendarView;
 
         // Handle date selection
-        calendarView.setOnDateChangeListener(new CalendarView.OnDateChangeListener() {
-            @Override
-            public void onSelectedDayChange(@NonNull CalendarView view, int year, int month, int dayOfMonth) {
-                String date = dayOfMonth + "/" + (month + 1) + "/" + year;
-                Toast.makeText(getContext(), "Selected Date: " + date, Toast.LENGTH_SHORT).show();
-            }
+        calendarView.setOnDateChangeListener((view, year, month, dayOfMonth) -> {
+            String date = dayOfMonth + "/" + (month + 1) + "/" + year;
+            Toast.makeText(getContext(), "Selected Date: " + date, Toast.LENGTH_SHORT).show();
         });
 
         return binding.getRoot();
@@ -123,8 +118,8 @@ public class GoalsFragment extends Fragment {
     }
 
     private void saveGoals() {
-        String minText = binding.etMinCalories.getText().toString().trim();
-        String maxText = binding.etMaxCalories.getText().toString().trim();
+        String minText = Objects.requireNonNull(binding.etMinCalories.getText()).toString().trim();
+        String maxText = Objects.requireNonNull(binding.etMaxCalories.getText()).toString().trim();
 
         if (minText.isEmpty() || maxText.isEmpty()) {
             Toast.makeText(

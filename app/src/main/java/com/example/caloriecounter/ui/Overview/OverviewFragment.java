@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.caloriecounter.R;
 import com.example.caloriecounter.databinding.FragmentOverviewBinding;
 
 public class OverviewFragment extends Fragment {
@@ -45,10 +46,10 @@ public class OverviewFragment extends Fragment {
         int maxGoal = prefs.getInt("max_goal", 0);
 
         if (minGoal > 0 && maxGoal > 0) {
-            binding.tvCalorieGoal.setText("Daily Calorie Goal: " + minGoal + " - " + maxGoal + " cal");
+            binding.tvCalorieGoal.setText(String.format(getString(R.string.daily_calorie_goal_display), minGoal, maxGoal));
             binding.tvCalorieGoal.setVisibility(View.VISIBLE);
         } else {
-            binding.tvCalorieGoal.setText("No calorie goal set");
+            binding.tvCalorieGoal.setText(R.string.no_goal_set);
             binding.tvCalorieGoal.setVisibility(View.VISIBLE);
         }
     }
