@@ -3,4 +3,12 @@
     <string name="title_goals">Goals</string>
     <string name="title_overview">Overview</string>
     <string name="title_reminders">Reminders</string>
+    <string name="set_goal">Set Goal</string>
+    <string name="presets">Presets</string>
+    <string name="maximum_calories">Maximum Calories</string>
+    <string name="minimum_calories">Minimum Calories</string>
+    <string name="set_your_calorie_goals">Set Your Calorie Goals</string>
+    <string name="your_goal">Your Goal</string>
+    <string name="no_goal_set">No calorie goal set</string>
+    <string name="daily_calorie_goal_display">Daily Calorie Goal: %d - %d cal</string>
 </resources>
