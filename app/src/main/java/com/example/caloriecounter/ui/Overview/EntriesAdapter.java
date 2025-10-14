@@ -24,7 +24,7 @@ public class EntriesAdapter extends ListAdapter<CalorieEntry, EntriesAdapter.VH>
 
 
     private static final DiffUtil.ItemCallback<CalorieEntry> DIFF_CALLBACK =
-            new DiffUtil.ItemCallback<CalorieEntry>() {
+            new DiffUtil.ItemCallback<>() {
                 @Override
                 public boolean areItemsTheSame(@NonNull CalorieEntry oldItem, @NonNull CalorieEntry newItem) {
                     return oldItem.getName().equals(newItem.getName());

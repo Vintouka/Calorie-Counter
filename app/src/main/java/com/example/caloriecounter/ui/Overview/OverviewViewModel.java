@@ -9,6 +9,7 @@ import com.example.caloriecounter.data.models.CalorieEntry;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class OverviewViewModel extends ViewModel {
     private final MutableLiveData<List<CalorieEntry>> entries = new MutableLiveData<>(new ArrayList<>());
@@ -26,13 +27,13 @@ public class OverviewViewModel extends ViewModel {
     public LiveData<Double> getTotalCalories() { return totalCalories; }
 
     public void addEntry(CalorieEntry e) {
-        List<CalorieEntry> current = new ArrayList<>(entries.getValue());
-        current.add(0, e); // add to top
+        List<CalorieEntry> current = new ArrayList<>(Objects.requireNonNull(entries.getValue()));
+        current.add(0, e);
         entries.setValue(current);
     }
 
     public void removeEntry(int index) {
-        List<CalorieEntry> current = new ArrayList<>(entries.getValue());
+        List<CalorieEntry> current = new ArrayList<>(Objects.requireNonNull(entries.getValue()));
         current.remove(index);
         entries.setValue(current);
     }

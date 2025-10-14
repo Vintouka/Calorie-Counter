@@ -43,10 +43,8 @@ public class OverviewFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Initialize ViewModel
         viewModel = new ViewModelProvider(this).get(OverviewViewModel.class);
 
-        // Setup RecyclerView
         RecyclerView recyclerView = view.findViewById(R.id.rvEntries);
         EntriesAdapter adapter = new EntriesAdapter();
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -61,7 +59,6 @@ public class OverviewFragment extends Fragment {
                 tvTotalCalories.setText(String.format(Locale.getDefault(), "%.0f kcal", total))
         );
 
-        // Setup FAB
         FloatingActionButton fab = view.findViewById(R.id.fabAddEntry);
         fab.setOnClickListener(v -> showAddEntryDialog());
     }

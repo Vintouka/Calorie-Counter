@@ -1,7 +1,7 @@
 package com.example.caloriecounter.data.models;
 
 public class CalorieEntry {
-    private long id; // optional for DB
+    private long id;
     private final String name;
     private final double quantity;
     private final double caloriesPerUnit;
@@ -12,7 +12,6 @@ public class CalorieEntry {
         this.caloriesPerUnit = caloriesPerUnit;
     }
 
-    // getters/setters...
     public double getTotalCalories() {
         return quantity * caloriesPerUnit;
     }
