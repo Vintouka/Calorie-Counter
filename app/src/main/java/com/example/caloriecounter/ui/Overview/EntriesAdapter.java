@@ -15,11 +15,17 @@ import com.example.caloriecounter.R;
 import com.example.caloriecounter.data.models.CalorieEntry;
 
 import java.util.Locale;
+import java.util.function.Consumer;
 
 public class EntriesAdapter extends ListAdapter<CalorieEntry, EntriesAdapter.VH> {
 
-    public EntriesAdapter() {
+    private final Consumer<Integer> onEditListener;
+    private final Consumer<Integer> onDeleteListener;
+
+    public EntriesAdapter(Consumer<Integer> onEditListener, Consumer<Integer> onDeleteListener) {
         super(DIFF_CALLBACK);
+        this.onEditListener = onEditListener;
+        this.onDeleteListener = onDeleteListener;
     }
 
 
@@ -68,14 +74,20 @@ public class EntriesAdapter extends ListAdapter<CalorieEntry, EntriesAdapter.VH>
         CalorieEntry e = getItem(position);
         Context context = holder.itemView.getContext();
 
-        holder.qty.setText(context.getString(R.string.entry_quantity,
-                formatNumber(e.getQuantity())));
-
-        holder.perUnit.setText(context.getString(R.string.entry_calories_per_unit,
-                formatNumber(e.getCaloriesPerUnit())));
-
-        holder.total.setText(context.getString(R.string.entry_total,
-                formatNumber(e.getTotalCalories())));
         holder.name.setText(e.getName());
+        holder.qty.setText(context.getString(R.string.entry_quantity, formatNumber(e.getQuantity())));
+        holder.perUnit.setText(context.getString(R.string.entry_calories_per_unit, formatNumber(e.getCaloriesPerUnit())));
+        holder.total.setText(context.getString(R.string.entry_total, formatNumber(e.getTotalCalories())));
+
+        // Click to edit
+        holder.itemView.setOnClickListener(v -> {
+            if (onEditListener != null) onEditListener.accept(position);
+        });
+
+        // Long press to delete
+        holder.itemView.setOnLongClickListener(v -> {
+            if (onDeleteListener != null) onDeleteListener.accept(position);
+            return true;
+        });
     }
 }

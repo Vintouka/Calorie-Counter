@@ -8,6 +8,7 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,10 +22,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.caloriecounter.R;
 import com.example.caloriecounter.data.models.CalorieEntry;
 import com.example.caloriecounter.databinding.FragmentOverviewBinding;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.Locale;
+import java.util.Objects;
 
 public class OverviewFragment extends Fragment {
     private FragmentOverviewBinding binding;
@@ -46,7 +49,10 @@ public class OverviewFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(OverviewViewModel.class);
 
         RecyclerView recyclerView = view.findViewById(R.id.rvEntries);
-        EntriesAdapter adapter = new EntriesAdapter();
+        EntriesAdapter adapter = new EntriesAdapter(
+                position -> showEntryDialog(Objects.requireNonNull(viewModel.getEntries().getValue()).get(position), position),
+                this::confirmDelete
+        );
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setAdapter(adapter);
 
@@ -60,7 +66,7 @@ public class OverviewFragment extends Fragment {
         );
 
         FloatingActionButton fab = view.findViewById(R.id.fabAddEntry);
-        fab.setOnClickListener(v -> showAddEntryDialog());
+        fab.setOnClickListener(v -> showEntryDialog(null, -1));
     }
 
     @Override
@@ -70,71 +76,96 @@ public class OverviewFragment extends Fragment {
         loadCalorieGoals();
     }
 
-    private void showAddEntryDialog() {
-        // Inflate the dialog layout
+    private void showEntryDialog(@Nullable CalorieEntry existingEntry, int position) {
         LayoutInflater inflater = LayoutInflater.from(requireContext());
         View dialogView = inflater.inflate(R.layout.dialog_add_entry, null);
 
-        // Get references to views
         TextInputEditText etName = dialogView.findViewById(R.id.etName);
         TextInputEditText etQuantity = dialogView.findViewById(R.id.etQuantity);
         TextInputEditText etCaloriesPerUnit = dialogView.findViewById(R.id.etCaloriesPerUnit);
         TextView tvItemTotal = dialogView.findViewById(R.id.tvItemTotal);
+        ImageButton btnInc = dialogView.findViewById(R.id.btnIncreaseQty);
+        ImageButton btnDec = dialogView.findViewById(R.id.btnDecreaseQty);
 
-        // TextWatcher for real-time total calorie preview
-        TextWatcher previewWatcher = new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+        if (existingEntry != null) {
+            etName.setText(existingEntry.getName());
+            etQuantity.setText(String.format(Locale.getDefault(), "%.2f", existingEntry.getQuantity()));
+            etCaloriesPerUnit.setText(String.format(Locale.getDefault(), "%.2f", existingEntry.getCaloriesPerUnit()));
+        } else {
+            etQuantity.setText("1"); // default quantity
+        }
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                updateItemTotal();
+        // Update total live
+        TextWatcher watcher = new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                updateTotal();
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                updateItemTotal();
+            @Override public void afterTextChanged(Editable s) {
+                updateTotal();
             }
-
-            private void updateItemTotal() {
-                double quantity = parseDoubleOrZero(etQuantity.getText() != null ? etQuantity.getText().toString() : "");
-                double caloriesPerUnit = parseDoubleOrZero(etCaloriesPerUnit.getText() != null ? etCaloriesPerUnit.getText().toString() : "");
-                double total = quantity * caloriesPerUnit;
-                tvItemTotal.setText(getString(
-                        R.string.label_item_total_placeholder,
-                        String.format(Locale.getDefault(), "%.2f", total)
-                ));
+            private void updateTotal() {
+                double qty = parseDoubleOrZero(etQuantity.getText() != null ? etQuantity.getText().toString() : "");
+                double per = parseDoubleOrZero(etCaloriesPerUnit.getText() != null ? etCaloriesPerUnit.getText().toString() : "");
+                double total = qty * per;
+                tvItemTotal.setText(String.format(Locale.getDefault(), getString(R.string.label_item_total_placeholder), total));
             }
         };
+        etQuantity.addTextChangedListener(watcher);
+        etCaloriesPerUnit.addTextChangedListener(watcher);
 
-        etQuantity.addTextChangedListener(previewWatcher);
-        etCaloriesPerUnit.addTextChangedListener(previewWatcher);
+        // Quantity increment/decrement buttons
+        btnInc.setOnClickListener(v -> {
+            double qty = parseDoubleOrZero(Objects.requireNonNull(etQuantity.getText()).toString());
+            etQuantity.setText(String.format(Locale.getDefault(), "%.2f", qty + 1));
+        });
 
-        // Build the Material dialog
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.add_entry_title)
+        btnDec.setOnClickListener(v -> {
+            double qty = parseDoubleOrZero(Objects.requireNonNull(etQuantity.getText()).toString());
+            if (qty > 1) {
+                etQuantity.setText(String.format(Locale.getDefault(), "%.2f", qty - 1));
+            }
+        });
+
+        // Build dialog
+        boolean isEditing = existingEntry != null;
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(isEditing ? R.string.edit_entry_title : R.string.add_entry_title)
                 .setView(dialogView)
                 .setNegativeButton(android.R.string.cancel, (dialog, which) -> dialog.dismiss())
-                .setPositiveButton(R.string.add_entry_confirm, (dialog, which) -> {
+                .setPositiveButton(isEditing ? R.string.save_changes : R.string.add_entry_confirm, (dialog, which) -> {
                     String name = etName.getText() != null ? etName.getText().toString().trim() : "";
-                    double quantity = parseDoubleOrZero(etQuantity.getText() != null ? etQuantity.getText().toString() : "");
-                    double caloriesPerUnit = parseDoubleOrZero(etCaloriesPerUnit.getText() != null ? etCaloriesPerUnit.getText().toString() : "");
+                    double qty = parseDoubleOrZero(etQuantity.getText() != null ? etQuantity.getText().toString() : "");
+                    double per = parseDoubleOrZero(etCaloriesPerUnit.getText() != null ? etCaloriesPerUnit.getText().toString() : "");
 
-                    // Basic validation
                     if (name.isEmpty()) {
                         Toast.makeText(getContext(), R.string.error_name_required, Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    if (quantity <= 0 || caloriesPerUnit <= 0) {
+                    if (qty <= 0 || per <= 0) {
                         Toast.makeText(getContext(), R.string.error_invalid_numbers, Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    // Create and add the new entry
-                    CalorieEntry newEntry = new CalorieEntry(name, quantity, caloriesPerUnit);
-                    viewModel.addEntry(newEntry);
+                    CalorieEntry entry = new CalorieEntry(name, qty, per);
+                    if (isEditing) {
+                        viewModel.updateEntry(position, entry);
+                    } else {
+                        viewModel.addEntry(entry);
+                    }
                 })
+                .show();
+    }
+
+    private void confirmDelete(int position) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.delete_entry_title)
+                .setMessage(R.string.delete_entry_message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.delete_entry_confirm, (dialog, which) ->
+                        viewModel.deleteEntry(position))
                 .show();
     }
 

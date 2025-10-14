@@ -32,9 +32,19 @@ public class OverviewViewModel extends ViewModel {
         entries.setValue(current);
     }
 
-    public void removeEntry(int index) {
+    public void updateEntry(int index, CalorieEntry newEntry) {
         List<CalorieEntry> current = new ArrayList<>(Objects.requireNonNull(entries.getValue()));
-        current.remove(index);
-        entries.setValue(current);
+        if (index >= 0 && index < current.size()) {
+            current.set(index, newEntry);
+            entries.setValue(current);
+        }
+    }
+
+    public void deleteEntry(int index) {
+        List<CalorieEntry> current = new ArrayList<>(Objects.requireNonNull(entries.getValue()));
+        if (index >= 0 && index < current.size()) {
+            current.remove(index);
+            entries.setValue(current);
+        }
     }
 }
