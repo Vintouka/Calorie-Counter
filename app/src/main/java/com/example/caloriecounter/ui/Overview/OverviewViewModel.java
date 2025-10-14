@@ -2,18 +2,38 @@ package com.example.caloriecounter.ui.Overview;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.ViewModel;
 
-public class OverviewViewModel extends ViewModel {
+import com.example.caloriecounter.data.models.CalorieEntry;
 
-    private final MutableLiveData<String> mText;
+import java.util.ArrayList;
+import java.util.List;
+
+public class OverviewViewModel extends ViewModel {
+    private final MutableLiveData<List<CalorieEntry>> entries = new MutableLiveData<>(new ArrayList<>());
+    private final MediatorLiveData<Double> totalCalories = new MediatorLiveData<>();
 
     public OverviewViewModel() {
-        mText = new MutableLiveData<>();
-        mText.setValue("This is home fragment");
+        totalCalories.addSource(entries, list -> {
+            double sum = 0;
+            for (CalorieEntry e : list) sum += e.getTotalCalories();
+            totalCalories.setValue(sum);
+        });
     }
 
-    public LiveData<String> getText() {
-        return mText;
+    public LiveData<List<CalorieEntry>> getEntries() { return entries; }
+    public LiveData<Double> getTotalCalories() { return totalCalories; }
+
+    public void addEntry(CalorieEntry e) {
+        List<CalorieEntry> current = new ArrayList<>(entries.getValue());
+        current.add(0, e); // add to top
+        entries.setValue(current);
+    }
+
+    public void removeEntry(int index) {
+        List<CalorieEntry> current = new ArrayList<>(entries.getValue());
+        current.remove(index);
+        entries.setValue(current);
     }
 }
