@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -62,7 +63,11 @@ public class OverviewFragment extends Fragment {
         // Observe total calories
         TextView tvTotalCalories = view.findViewById(R.id.tvTotalCalories);
         viewModel.getTotalCalories().observe(getViewLifecycleOwner(), total ->
-                tvTotalCalories.setText(String.format(Locale.getDefault(), "%.0f kcal", total))
+                {
+                    tvTotalCalories.setText(String.format(Locale.getDefault(), "%.0f kcal", total));
+                    int progress = (int) (double) total;
+                    binding.progressBar2.setProgress(progress, true);
+                }
         );
 
         FloatingActionButton fab = view.findViewById(R.id.fabAddEntry);
@@ -185,6 +190,9 @@ public class OverviewFragment extends Fragment {
         if (minGoal > 0 && maxGoal > 0) {
             binding.tvCalorieGoal.setText(String.format(getString(R.string.daily_calorie_goal_display), minGoal, maxGoal));
             binding.tvCalorieGoal.setVisibility(View.VISIBLE);
+            binding.progressBar2.setMax(maxGoal);
+            int progress = (int) (double) viewModel.getTotalCalories().getValue();
+            binding.progressBar2.setProgress(progress, true);
         } else {
             binding.tvCalorieGoal.setText(R.string.no_goal_set);
             binding.tvCalorieGoal.setVisibility(View.VISIBLE);
