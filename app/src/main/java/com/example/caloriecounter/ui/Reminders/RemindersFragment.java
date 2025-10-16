@@ -14,7 +14,9 @@ import com.example.caloriecounter.databinding.FragmentRemindersBinding;
 
 public class RemindersFragment extends Fragment {
 
+
     private FragmentRemindersBinding binding;
+
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {

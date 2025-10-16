@@ -10,7 +10,7 @@ public class RemindersViewModel extends ViewModel {
 
     public RemindersViewModel() {
         mText = new MutableLiveData<>();
-        mText.setValue("This is Reminders fragment");
+        mText.setValue("Set or Manage Reminders");
     }
 
     public LiveData<String> getText() {

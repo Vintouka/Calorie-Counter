@@ -73,13 +73,15 @@
             android:id="@+id/rvEntries"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="30dp"
             android:clipToPadding="false"
             android:paddingBottom="72dp"
             app:layout_constraintBottom_toTopOf="@+id/fabAddEntry"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvTotalCalories" />
+            app:layout_constraintTop_toBottomOf="@id/tvTotalCalories"
+            app:layout_constraintVertical_bias="1.0" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabAddEntry"
@@ -91,6 +93,18 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:tint="@android:color/white" />
+
+        <ProgressBar
+            android:id="@+id/progressBar2"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:scaleY="4"
+            app:layout_constraintBottom_toTopOf="@+id/rvEntries"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvTotalCalories" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
