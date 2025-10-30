@@ -3,31 +3,57 @@ package com.example.caloriecounter.ui.Goals;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CalendarView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.caloriecounter.data.database.AppDatabase;
+import com.example.caloriecounter.data.database.CalorieEntryDao;
+import com.example.caloriecounter.data.database.CalorieEntryEntity;
 import com.example.caloriecounter.databinding.FragmentGoalsBinding;
+import com.example.caloriecounter.utils.DateUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class GoalsFragment extends Fragment {
     private FragmentGoalsBinding binding;
     private List<CaloriePreset> presets;
+    private CalorieEntryDao dao;
+    private ExecutorService executorService;
+    private Set<String> datesWithEntries = new HashSet<>();
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         initializePresets();
+        AppDatabase database = AppDatabase.getInstance(requireContext());
+        dao = database.calorieEntryDao();
+        executorService = Executors.newSingleThreadExecutor();
+
+        // Load all dates with entries
+        dao.getAllDatesWithEntries().observe(this, dates -> {
+            if (dates != null) {
+                datesWithEntries.clear();
+                datesWithEntries.addAll(dates);
+            }
+        });
     }
 
     @Nullable
@@ -37,13 +63,26 @@ public class GoalsFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         binding = FragmentGoalsBinding.inflate(inflater, container, false);
 
-        // Access the CalendarView via binding
         CalendarView calendarView = binding.calendarView;
 
         // Handle date selection
         calendarView.setOnDateChangeListener((view, year, month, dayOfMonth) -> {
-            String date = dayOfMonth + "/" + (month + 1) + "/" + year;
-            Toast.makeText(getContext(), "Selected Date: " + date, Toast.LENGTH_SHORT).show();
+            String selectedDate = DateUtils.formatDate(year, month, dayOfMonth);
+
+            // Check if date is in the future
+            if (DateUtils.isFutureDate(selectedDate)) {
+                Toast.makeText(getContext(), "No data for future dates", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Check if date has entries
+            if (!datesWithEntries.contains(selectedDate)) {
+                Toast.makeText(getContext(), "No entries for this date", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Show entries for selected date
+            showEntriesForDate(selectedDate);
         });
 
         return binding.getRoot();
@@ -53,14 +92,76 @@ public class GoalsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Load saved goals
         loadSavedGoals();
-
-        // Set up Presets button
         binding.btnPresets.setOnClickListener(v -> showPresetsDialog());
-
-        // Set up Set Goal button
         binding.btnSetGoal.setOnClickListener(v -> saveGoals());
+    }
+
+    private void showEntriesForDate(String date) {
+        executorService.execute(() -> {
+            List<CalorieEntryEntity> entries = dao.getEntriesForDateSync(date);
+            double totalCalories = dao.getTotalCaloriesForDate(date);
+
+            SharedPreferences prefs = requireActivity()
+                    .getSharedPreferences("CalorieGoals", Context.MODE_PRIVATE);
+            int minGoal = prefs.getInt("min_goal", 0);
+            int maxGoal = prefs.getInt("max_goal", 0);
+
+            requireActivity().runOnUiThread(() -> {
+                AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+                builder.setTitle("Entries for " + date);
+
+                // Create custom view for dialog
+                LinearLayout layout = new LinearLayout(requireContext());
+                layout.setOrientation(LinearLayout.VERTICAL);
+                layout.setPadding(50, 20, 50, 20);
+
+                // Show goal status
+                if (minGoal > 0 && maxGoal > 0) {
+                    TextView goalStatus = new TextView(requireContext());
+                    boolean metGoal = totalCalories >= minGoal && totalCalories <= maxGoal;
+                    goalStatus.setText(metGoal ? "✓ Goal Met" : "✗ Goal Not Met");
+                    goalStatus.setTextColor(metGoal ? Color.GREEN : Color.RED);
+                    goalStatus.setTextSize(18);
+                    goalStatus.setPadding(0, 0, 0, 20);
+                    layout.addView(goalStatus);
+
+                    TextView goalRange = new TextView(requireContext());
+                    goalRange.setText(String.format(Locale.getDefault(),
+                            "Goal: %d - %d kcal", minGoal, maxGoal));
+                    goalRange.setTextSize(14);
+                    goalRange.setPadding(0, 0, 0, 10);
+                    layout.addView(goalRange);
+                }
+
+                // Show total
+                TextView totalView = new TextView(requireContext());
+                totalView.setText(String.format(Locale.getDefault(),
+                        "Total: %.0f kcal", totalCalories));
+                totalView.setTextSize(16);
+                totalView.setTypeface(null, android.graphics.Typeface.BOLD);
+                totalView.setPadding(0, 0, 0, 20);
+                layout.addView(totalView);
+
+                // Show entries
+                for (CalorieEntryEntity entry : entries) {
+                    TextView entryView = new TextView(requireContext());
+                    entryView.setText(String.format(Locale.getDefault(),
+                            "%s: %.1f × %.0f = %.0f kcal",
+                            entry.getName(),
+                            entry.getQuantity(),
+                            entry.getCaloriesPerUnit(),
+                            entry.getTotalCalories()));
+                    entryView.setTextSize(14);
+                    entryView.setPadding(0, 5, 0, 5);
+                    layout.addView(entryView);
+                }
+
+                builder.setView(layout);
+                builder.setPositiveButton("Close", null);
+                builder.show();
+            });
+        });
     }
 
     private void initializePresets() {
@@ -153,7 +254,6 @@ public class GoalsFragment extends Fragment {
             return;
         }
 
-        // Save to SharedPreferences
         SharedPreferences prefs = requireActivity()
                 .getSharedPreferences("CalorieGoals", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
@@ -174,7 +274,14 @@ public class GoalsFragment extends Fragment {
         binding = null;
     }
 
-    // Inner class for CaloriePreset
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (executorService != null) {
+            executorService.shutdown();
+        }
+    }
+
     public static class CaloriePreset {
         private final String name;
         private final int minCalories;

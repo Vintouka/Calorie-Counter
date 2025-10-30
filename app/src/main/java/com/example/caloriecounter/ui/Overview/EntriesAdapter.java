@@ -61,6 +61,7 @@ public class EntriesAdapter extends ListAdapter<CalorieEntry, EntriesAdapter.VH>
         else
             return String.format(Locale.getDefault(), "%.2f", value);
     }
+
     @NonNull
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -79,14 +80,18 @@ public class EntriesAdapter extends ListAdapter<CalorieEntry, EntriesAdapter.VH>
         holder.perUnit.setText(context.getString(R.string.entry_calories_per_unit, formatNumber(e.getCaloriesPerUnit())));
         holder.total.setText(context.getString(R.string.entry_total, formatNumber(e.getTotalCalories())));
 
-        // Click to edit
         holder.itemView.setOnClickListener(v -> {
-            if (onEditListener != null) onEditListener.accept(position);
+            int currentPosition = holder.getBindingAdapterPosition();
+            if (currentPosition != RecyclerView.NO_POSITION && onEditListener != null) {
+                onEditListener.accept(currentPosition);
+            }
         });
 
-        // Long press to delete
         holder.itemView.setOnLongClickListener(v -> {
-            if (onDeleteListener != null) onDeleteListener.accept(position);
+            int currentPosition = holder.getBindingAdapterPosition();
+            if (currentPosition != RecyclerView.NO_POSITION && onDeleteListener != null) {
+                onDeleteListener.accept(currentPosition);
+            }
             return true;
         });
     }

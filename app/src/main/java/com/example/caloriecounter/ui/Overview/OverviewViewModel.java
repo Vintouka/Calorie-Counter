@@ -1,50 +1,110 @@
 package com.example.caloriecounter.ui.Overview;
 
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.MediatorLiveData;
-import androidx.lifecycle.ViewModel;
+import android.app.Application;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
+import androidx.lifecycle.Transformations;
+
+import com.example.caloriecounter.data.database.AppDatabase;
+import com.example.caloriecounter.data.database.CalorieEntryDao;
+import com.example.caloriecounter.data.database.CalorieEntryEntity;
 import com.example.caloriecounter.data.models.CalorieEntry;
+import com.example.caloriecounter.utils.DateUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class OverviewViewModel extends ViewModel {
-    private final MutableLiveData<List<CalorieEntry>> entries = new MutableLiveData<>(new ArrayList<>());
-    private final MediatorLiveData<Double> totalCalories = new MediatorLiveData<>();
+public class OverviewViewModel extends AndroidViewModel {
+    private final CalorieEntryDao dao;
+    private final ExecutorService executorService;
+    private final LiveData<List<CalorieEntryEntity>> todayEntitiesLive;
+    private final LiveData<List<CalorieEntry>> entries;
+    private final MediatorLiveData<Double> totalCalories = new MediatorLiveData<>(0.0);
 
-    public OverviewViewModel() {
-        totalCalories.addSource(entries, list -> {
+    public OverviewViewModel(@NonNull Application application) {
+        super(application);
+        AppDatabase database = AppDatabase.getInstance(application);
+        dao = database.calorieEntryDao();
+        executorService = Executors.newSingleThreadExecutor();
+
+        // Get today's entries from database
+        todayEntitiesLive = dao.getEntriesForDate(DateUtils.getTodayDate());
+
+        // Convert entities to CalorieEntry objects
+        entries = Transformations.map(todayEntitiesLive, entities -> {
+            List<CalorieEntry> list = new ArrayList<>();
+            for (CalorieEntryEntity entity : entities) {
+                CalorieEntry entry = new CalorieEntry(
+                        entity.getName(),
+                        entity.getQuantity(),
+                        entity.getCaloriesPerUnit()
+                );
+                list.add(entry);
+            }
+            return list;
+        });
+
+        // Calculate total calories
+        totalCalories.addSource(todayEntitiesLive, list -> {
             double sum = 0;
-            for (CalorieEntry e : list) sum += e.getTotalCalories();
+            for (CalorieEntryEntity e : list) {
+                sum += e.getTotalCalories();
+            }
             totalCalories.setValue(sum);
         });
     }
 
-    public LiveData<List<CalorieEntry>> getEntries() { return entries; }
-    public LiveData<Double> getTotalCalories() { return totalCalories; }
+    public LiveData<List<CalorieEntry>> getEntries() {
+        return entries;
+    }
 
-    public void addEntry(CalorieEntry e) {
-        List<CalorieEntry> current = new ArrayList<>(Objects.requireNonNull(entries.getValue()));
-        current.add(0, e);
-        entries.setValue(current);
+    public LiveData<Double> getTotalCalories() {
+        return totalCalories;
+    }
+
+    public void addEntry(CalorieEntry entry) {
+        executorService.execute(() -> {
+            CalorieEntryEntity entity = new CalorieEntryEntity(
+                    DateUtils.getTodayDate(),
+                    entry.getName(),
+                    entry.getQuantity(),
+                    entry.getCaloriesPerUnit(),
+                    System.currentTimeMillis()
+            );
+            dao.insert(entity);
+        });
     }
 
     public void updateEntry(int index, CalorieEntry newEntry) {
-        List<CalorieEntry> current = new ArrayList<>(Objects.requireNonNull(entries.getValue()));
-        if (index >= 0 && index < current.size()) {
-            current.set(index, newEntry);
-            entries.setValue(current);
-        }
+        executorService.execute(() -> {
+            List<CalorieEntryEntity> entities = dao.getEntriesForDateSync(DateUtils.getTodayDate());
+            if (index >= 0 && index < entities.size()) {
+                CalorieEntryEntity entity = entities.get(index);
+                entity.setName(newEntry.getName());
+                entity.setQuantity(newEntry.getQuantity());
+                entity.setCaloriesPerUnit(newEntry.getCaloriesPerUnit());
+                dao.update(entity);
+            }
+        });
     }
 
     public void deleteEntry(int index) {
-        List<CalorieEntry> current = new ArrayList<>(Objects.requireNonNull(entries.getValue()));
-        if (index >= 0 && index < current.size()) {
-            current.remove(index);
-            entries.setValue(current);
-        }
+        executorService.execute(() -> {
+            List<CalorieEntryEntity> entities = dao.getEntriesForDateSync(DateUtils.getTodayDate());
+            if (index >= 0 && index < entities.size()) {
+                dao.delete(entities.get(index));
+            }
+        });
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        executorService.shutdown();
     }
 }
