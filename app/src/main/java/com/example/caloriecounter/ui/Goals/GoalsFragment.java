@@ -17,6 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.caloriecounter.R;
 import com.example.caloriecounter.data.database.AppDatabase;
 import com.example.caloriecounter.data.database.CalorieEntryDao;
 import com.example.caloriecounter.data.database.CalorieEntryEntity;
@@ -24,9 +25,11 @@ import com.example.caloriecounter.databinding.FragmentGoalsBinding;
 import com.example.caloriecounter.utils.DateUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -38,6 +41,7 @@ public class GoalsFragment extends Fragment {
     private CalorieEntryDao dao;
     private ExecutorService executorService;
     private Set<String> datesWithEntries = new HashSet<>();
+    private Map<String, Boolean> goalStatusMap = new HashMap<>();
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -52,6 +56,21 @@ public class GoalsFragment extends Fragment {
             if (dates != null) {
                 datesWithEntries.clear();
                 datesWithEntries.addAll(dates);
+
+                // Calculate goal status for each date
+                executorService.execute(() -> {
+                    SharedPreferences prefs = requireActivity()
+                            .getSharedPreferences("CalorieGoals", Context.MODE_PRIVATE);
+                    int minGoal = prefs.getInt("min_goal", 0);
+                    int maxGoal = prefs.getInt("max_goal", 0);
+
+                    for (String date : dates) {
+                        double total = dao.getTotalCaloriesForDate(date);
+                        boolean metGoal = minGoal > 0 && maxGoal > 0 &&
+                                total >= minGoal && total <= maxGoal;
+                        goalStatusMap.put(date, metGoal);
+                    }
+                });
             }
         });
     }
@@ -69,20 +88,23 @@ public class GoalsFragment extends Fragment {
         calendarView.setOnDateChangeListener((view, year, month, dayOfMonth) -> {
             String selectedDate = DateUtils.formatDate(year, month, dayOfMonth);
 
-            // Check if date is in the future
             if (DateUtils.isFutureDate(selectedDate)) {
                 Toast.makeText(getContext(), "No data for future dates", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Check if date has entries
             if (!datesWithEntries.contains(selectedDate)) {
                 Toast.makeText(getContext(), "No entries for this date", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Show entries for selected date
-            showEntriesForDate(selectedDate);
+            // Navigate to full screen fragment
+            DayDetailFragment fragment = DayDetailFragment.newInstance(selectedDate);
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.nav_host_fragment_activity_main, fragment)
+                    .addToBackStack(null)
+                    .commit();
         });
 
         return binding.getRoot();

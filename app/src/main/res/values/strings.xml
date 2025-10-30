@@ -40,4 +40,6 @@
     <string name="Set_hourly_goal">Set Hourly Goal</string>
     <string name="Set_or_Manage_Reminders">Set or Manage Reminders</string>
     <string name="Hourly_Goal">Hourly Goal</string>
+    <string name="entries_label">Entries:</string>
+    <string name="ic_arrow_back">Back</string>
 </resources>

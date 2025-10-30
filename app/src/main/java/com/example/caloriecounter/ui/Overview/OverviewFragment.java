@@ -136,7 +136,7 @@ public class OverviewFragment extends Fragment {
         // Build dialog
         boolean isEditing = existingEntry != null;
 
-        new MaterialAlertDialogBuilder(requireContext())
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(isEditing ? R.string.edit_entry_title : R.string.add_entry_title)
                 .setView(dialogView)
                 .setNegativeButton(android.R.string.cancel, (dialog, which) -> dialog.dismiss())
@@ -161,8 +161,14 @@ public class OverviewFragment extends Fragment {
                     } else {
                         viewModel.addEntry(entry);
                     }
-                })
-                .show();
+                });
+        if (isEditing) {
+            builder.setNeutralButton(R.string.delete_entry_confirm, (dialog, which) -> {
+                confirmDelete(position);
+            });
+        }
+
+        builder.show();
     }
 
     private void confirmDelete(int position) {
