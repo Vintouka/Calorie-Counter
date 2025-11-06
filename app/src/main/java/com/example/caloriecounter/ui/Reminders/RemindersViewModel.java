@@ -10,7 +10,7 @@ public class RemindersViewModel extends ViewModel {
 
     public RemindersViewModel() {
         mText = new MutableLiveData<>();
-        mText.setValue("Set or Manage Reminders");
+        mText.setValue("Set daily reminders to meet your calorie goals");
     }
 
     public LiveData<String> getText() {
