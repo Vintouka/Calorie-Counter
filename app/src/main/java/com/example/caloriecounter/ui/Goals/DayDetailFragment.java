@@ -7,19 +7,24 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.caloriecounter.R;
 import com.example.caloriecounter.data.database.AppDatabase;
 import com.example.caloriecounter.data.database.CalorieEntryDao;
 import com.example.caloriecounter.data.database.CalorieEntryEntity;
+import com.example.caloriecounter.data.models.CalorieEntry;
+import com.example.caloriecounter.ui.Overview.EntriesAdapter;
 import com.google.android.material.appbar.MaterialToolbar;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -30,8 +35,10 @@ public class DayDetailFragment extends Fragment {
     private String selectedDate;
     private CalorieEntryDao dao;
     private ExecutorService executorService;
-    private LinearLayout entriesContainer;
+    private RecyclerView recyclerView;
+    private EntriesAdapter adapter;
     private TextView tvDateTitle, tvGoalStatus, tvGoalRange, tvTotal;
+    private ProgressBar progressBar;
 
     public static DayDetailFragment newInstance(String date) {
         DayDetailFragment fragment = new DayDetailFragment();
@@ -59,13 +66,30 @@ public class DayDetailFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_day_detail, container, false);
 
         MaterialToolbar toolbar = view.findViewById(R.id.toolbar);
-        toolbar.setNavigationOnClickListener(v -> requireActivity().onBackPressed());
+        toolbar.setNavigationOnClickListener(v -> {
+            // Pop the child fragment manager back stack
+            if (getParentFragment() != null) {
+                getParentFragment().getChildFragmentManager().popBackStack();
+                // Show main content again
+                if (getParentFragment().getView() != null) {
+                    getParentFragment().getView().findViewById(R.id.goalsMainContent).setVisibility(View.VISIBLE);
+                    getParentFragment().getView().findViewById(R.id.fragmentContainer).setVisibility(View.GONE);
+                }
+            }
+        });
 
         tvDateTitle = view.findViewById(R.id.tvDateTitle);
         tvGoalStatus = view.findViewById(R.id.tvGoalStatus);
         tvGoalRange = view.findViewById(R.id.tvGoalRange);
         tvTotal = view.findViewById(R.id.tvTotal);
-        entriesContainer = view.findViewById(R.id.entriesContainer);
+        progressBar = view.findViewById(R.id.progressBar);
+
+        recyclerView = view.findViewById(R.id.rvEntries);
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+
+        // Create adapter with null listeners (read-only)
+        adapter = new EntriesAdapter(null, null);
+        recyclerView.setAdapter(adapter);
 
         tvDateTitle.setText(selectedDate);
 
@@ -94,30 +118,30 @@ public class DayDetailFragment extends Fragment {
 
                     tvGoalRange.setText(String.format(Locale.getDefault(),
                             "Goal: %d - %d kcal", minGoal, maxGoal));
-                    tvGoalRange.setVisibility(View.VISIBLE);
+
+                    // Set progress bar
+                    progressBar.setMax(maxGoal);
+                    progressBar.setProgress((int) totalCalories, true);
                 } else {
                     tvGoalStatus.setVisibility(View.GONE);
-                    tvGoalRange.setVisibility(View.GONE);
+                    tvGoalRange.setText("No goal set");
+                    progressBar.setVisibility(View.GONE);
                 }
 
                 // Show total
                 tvTotal.setText(String.format(Locale.getDefault(),
-                        "Total: %.0f kcal", totalCalories));
+                        "%.0f kcal", totalCalories));
 
-                // Show entries
-                entriesContainer.removeAllViews();
-                for (CalorieEntryEntity entry : entries) {
-                    TextView entryView = new TextView(requireContext());
-                    entryView.setText(String.format(Locale.getDefault(),
-                            "%s: %.1f × %.0f = %.0f kcal",
-                            entry.getName(),
-                            entry.getQuantity(),
-                            entry.getCaloriesPerUnit(),
-                            entry.getTotalCalories()));
-                    entryView.setTextSize(16);
-                    entryView.setPadding(0, 12, 0, 12);
-                    entriesContainer.addView(entryView);
+                // Convert entities to CalorieEntry list for adapter
+                List<CalorieEntry> calorieEntries = new ArrayList<>();
+                for (CalorieEntryEntity entity : entries) {
+                    calorieEntries.add(new CalorieEntry(
+                            entity.getName(),
+                            entity.getQuantity(),
+                            entity.getCaloriesPerUnit()
+                    ));
                 }
+                adapter.submitList(calorieEntries);
             });
         });
     }

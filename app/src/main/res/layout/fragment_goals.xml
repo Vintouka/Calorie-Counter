@@ -5,7 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.Goals.GoalsFragment">
+
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/goalsMainContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="16dp">
@@ -84,12 +86,59 @@
             app:layout_constraintStart_toEndOf="@id/btnPresets"
             app:layout_constraintEnd_toEndOf="parent"/>
 
-        <CalendarView
-            android:id="@+id/calendarView"
+        <RelativeLayout
+            android:id="@+id/calendarWrapper"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
             android:layout_marginTop="16dp"
-            android:layout_gravity="center"
-            app:layout_constraintTop_toBottomOf="@id/btnPresets" />
+            app:layout_constraintTop_toBottomOf="@id/btnPresets"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <FrameLayout
+                android:id="@+id/customCalendarContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+            <!-- Navigation buttons overlay -->
+            <Button
+                android:id="@+id/btnPrevMonth"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:layout_marginTop="0dp"
+                android:layout_marginStart="8dp"
+                android:text="@string/left_arrow"
+                android:textSize="24sp"
+                android:textColor="@android:color/black"
+                android:background="@android:color/transparent"
+                android:elevation="4dp"
+                style="?attr/borderlessButtonStyle"/>
+
+            <Button
+                android:id="@+id/btnNextMonth"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="8dp"
+                android:text="@string/right_arrow"
+                android:textSize="24sp"
+                android:textColor="@android:color/black"
+                android:background="@android:color/transparent"
+                android:elevation="4dp"
+                style="?attr/borderlessButtonStyle"/>
+
+        </RelativeLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Container for DayDetailFragment -->
+    <FrameLayout
+        android:id="@+id/fragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"/>
 </FrameLayout>

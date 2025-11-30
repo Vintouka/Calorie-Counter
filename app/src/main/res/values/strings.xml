@@ -42,4 +42,7 @@
     <string name="Hourly_Goal">Hourly Goal</string>
     <string name="entries_label">Entries:</string>
     <string name="ic_arrow_back">Back</string>
+    <string name="total_for_this_day">Total for this day</string>
+    <string name="left_arrow">◀</string>
+    <string name="right_arrow">▶</string>
 </resources>

@@ -3,14 +3,11 @@ package com.example.caloriecounter.ui.Goals;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CalendarView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -20,15 +17,14 @@ import androidx.fragment.app.Fragment;
 import com.example.caloriecounter.R;
 import com.example.caloriecounter.data.database.AppDatabase;
 import com.example.caloriecounter.data.database.CalorieEntryDao;
-import com.example.caloriecounter.data.database.CalorieEntryEntity;
 import com.example.caloriecounter.databinding.FragmentGoalsBinding;
 import com.example.caloriecounter.utils.DateUtils;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -42,6 +38,9 @@ public class GoalsFragment extends Fragment {
     private ExecutorService executorService;
     private Set<String> datesWithEntries = new HashSet<>();
     private Map<String, Boolean> goalStatusMap = new HashMap<>();
+    private CustomCalendarView customCalendarView;
+    private View goalsMainContent;
+    private FrameLayout fragmentContainer;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -64,12 +63,20 @@ public class GoalsFragment extends Fragment {
                     int minGoal = prefs.getInt("min_goal", 0);
                     int maxGoal = prefs.getInt("max_goal", 0);
 
+                    goalStatusMap.clear();
                     for (String date : dates) {
                         double total = dao.getTotalCaloriesForDate(date);
                         boolean metGoal = minGoal > 0 && maxGoal > 0 &&
                                 total >= minGoal && total <= maxGoal;
                         goalStatusMap.put(date, metGoal);
                     }
+
+                    requireActivity().runOnUiThread(() -> {
+                        if (customCalendarView != null) {
+                            customCalendarView.setDatesWithEntries(datesWithEntries);
+                            customCalendarView.setGoalStatusMap(goalStatusMap);
+                        }
+                    });
                 });
             }
         });
@@ -82,30 +89,11 @@ public class GoalsFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         binding = FragmentGoalsBinding.inflate(inflater, container, false);
 
-        CalendarView calendarView = binding.calendarView;
+        goalsMainContent = binding.goalsMainContent;
+        fragmentContainer = binding.fragmentContainer;
 
-        // Handle date selection
-        calendarView.setOnDateChangeListener((view, year, month, dayOfMonth) -> {
-            String selectedDate = DateUtils.formatDate(year, month, dayOfMonth);
-
-            if (DateUtils.isFutureDate(selectedDate)) {
-                Toast.makeText(getContext(), "No data for future dates", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            if (!datesWithEntries.contains(selectedDate)) {
-                Toast.makeText(getContext(), "No entries for this date", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            // Navigate to full screen fragment
-            DayDetailFragment fragment = DayDetailFragment.newInstance(selectedDate);
-            requireActivity().getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.nav_host_fragment_activity_main, fragment)
-                    .addToBackStack(null)
-                    .commit();
-        });
+        // Setup custom calendar
+        setupCustomCalendar();
 
         return binding.getRoot();
     }
@@ -117,73 +105,93 @@ public class GoalsFragment extends Fragment {
         loadSavedGoals();
         binding.btnPresets.setOnClickListener(v -> showPresetsDialog());
         binding.btnSetGoal.setOnClickListener(v -> saveGoals());
+
+        // Handle Goals tab reselection to dismiss DayDetail
+        setupNavigationReselectionListener();
     }
 
-    private void showEntriesForDate(String date) {
-        executorService.execute(() -> {
-            List<CalorieEntryEntity> entries = dao.getEntriesForDateSync(date);
-            double totalCalories = dao.getTotalCaloriesForDate(date);
+    private void setupNavigationReselectionListener() {
+        // Get the bottom navigation view from the activity
+        if (getActivity() != null) {
+            View bottomNav = getActivity().findViewById(R.id.nav_view);
+            if (bottomNav instanceof BottomNavigationView) {
+                BottomNavigationView navView =
+                        (BottomNavigationView) bottomNav;
 
-            SharedPreferences prefs = requireActivity()
-                    .getSharedPreferences("CalorieGoals", Context.MODE_PRIVATE);
-            int minGoal = prefs.getInt("min_goal", 0);
-            int maxGoal = prefs.getInt("max_goal", 0);
+                navView.setOnItemReselectedListener(item -> {
+                    if (item.getItemId() == R.id.navigation_dashboard) { // Assuming Goals is navigation_dashboard
+                        // If DayDetail is showing, hide it
+                        if (fragmentContainer != null && fragmentContainer.getVisibility() == View.VISIBLE) {
+                            while (getChildFragmentManager().getBackStackEntryCount() > 0) {
+                                getChildFragmentManager().popBackStackImmediate();
+                            }
+                            goalsMainContent.setVisibility(View.VISIBLE);
+                            fragmentContainer.setVisibility(View.GONE);
+                        }
+                    }
+                });
+            }
+        }
+    }
 
-            requireActivity().runOnUiThread(() -> {
-                AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-                builder.setTitle("Entries for " + date);
+    @Override
+    public void onResume() {
+        super.onResume();
 
-                // Create custom view for dialog
-                LinearLayout layout = new LinearLayout(requireContext());
-                layout.setOrientation(LinearLayout.VERTICAL);
-                layout.setPadding(50, 20, 50, 20);
-
-                // Show goal status
-                if (minGoal > 0 && maxGoal > 0) {
-                    TextView goalStatus = new TextView(requireContext());
-                    boolean metGoal = totalCalories >= minGoal && totalCalories <= maxGoal;
-                    goalStatus.setText(metGoal ? "✓ Goal Met" : "✗ Goal Not Met");
-                    goalStatus.setTextColor(metGoal ? Color.GREEN : Color.RED);
-                    goalStatus.setTextSize(18);
-                    goalStatus.setPadding(0, 0, 0, 20);
-                    layout.addView(goalStatus);
-
-                    TextView goalRange = new TextView(requireContext());
-                    goalRange.setText(String.format(Locale.getDefault(),
-                            "Goal: %d - %d kcal", minGoal, maxGoal));
-                    goalRange.setTextSize(14);
-                    goalRange.setPadding(0, 0, 0, 10);
-                    layout.addView(goalRange);
-                }
-
-                // Show total
-                TextView totalView = new TextView(requireContext());
-                totalView.setText(String.format(Locale.getDefault(),
-                        "Total: %.0f kcal", totalCalories));
-                totalView.setTextSize(16);
-                totalView.setTypeface(null, android.graphics.Typeface.BOLD);
-                totalView.setPadding(0, 0, 0, 20);
-                layout.addView(totalView);
-
-                // Show entries
-                for (CalorieEntryEntity entry : entries) {
-                    TextView entryView = new TextView(requireContext());
-                    entryView.setText(String.format(Locale.getDefault(),
-                            "%s: %.1f × %.0f = %.0f kcal",
-                            entry.getName(),
-                            entry.getQuantity(),
-                            entry.getCaloriesPerUnit(),
-                            entry.getTotalCalories()));
-                    entryView.setTextSize(14);
-                    entryView.setPadding(0, 5, 0, 5);
-                    layout.addView(entryView);
-                }
-
-                builder.setView(layout);
-                builder.setPositiveButton("Close", null);
-                builder.show();
-            });
+        // Listen for back stack changes
+        getChildFragmentManager().addOnBackStackChangedListener(() -> {
+            if (getChildFragmentManager().getBackStackEntryCount() == 0) {
+                goalsMainContent.setVisibility(View.VISIBLE);
+                fragmentContainer.setVisibility(View.GONE);
+            }
         });
+    }
+
+    private void setupCustomCalendar() {
+        customCalendarView = new CustomCalendarView(requireContext());
+        customCalendarView.setLayoutParams(new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+        ));
+
+        binding.customCalendarContainer.addView(customCalendarView);
+
+        // Set initial data if already loaded
+        customCalendarView.setDatesWithEntries(datesWithEntries);
+        customCalendarView.setGoalStatusMap(goalStatusMap);
+
+        customCalendarView.setOnDateClickListener((year, month, day) -> {
+            String selectedDate = DateUtils.formatDate(year, month, day);
+
+            if (DateUtils.isFutureDate(selectedDate)) {
+                Toast.makeText(getContext(), "No data for future dates", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!datesWithEntries.contains(selectedDate)) {
+                Toast.makeText(getContext(), "No entries for this date", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Show DayDetailFragment
+            showDayDetail(selectedDate);
+        });
+
+        // Setup navigation buttons
+        binding.btnPrevMonth.setOnClickListener(v -> customCalendarView.previousMonth());
+        binding.btnNextMonth.setOnClickListener(v -> customCalendarView.nextMonth());
+    }
+
+    private void showDayDetail(String date) {
+        goalsMainContent.setVisibility(View.GONE);
+        fragmentContainer.setVisibility(View.VISIBLE);
+
+        DayDetailFragment fragment = DayDetailFragment.newInstance(date);
+        getChildFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragmentContainer, fragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     private void initializePresets() {
@@ -288,6 +296,23 @@ public class GoalsFragment extends Fragment {
                 "Goals saved successfully!",
                 Toast.LENGTH_SHORT
         ).show();
+
+        // Recalculate goal status for all dates with new goals
+        executorService.execute(() -> {
+            goalStatusMap.clear();
+            for (String date : datesWithEntries) {
+                double total = dao.getTotalCaloriesForDate(date);
+                boolean metGoal = minGoal > 0 && maxGoal > 0 &&
+                        total >= minGoal && total <= maxGoal;
+                goalStatusMap.put(date, metGoal);
+            }
+
+            requireActivity().runOnUiThread(() -> {
+                if (customCalendarView != null) {
+                    customCalendarView.setGoalStatusMap(goalStatusMap);
+                }
+            });
+        });
     }
 
     @Override
