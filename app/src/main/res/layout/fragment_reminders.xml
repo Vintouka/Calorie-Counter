@@ -6,30 +6,13 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <TextView
-        android:id="@+id/text_notifications"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Set daily reminders to meet your calorie goals"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="24dp" />
-
     <Button
         android:id="@+id/btnSetReminder"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Set Daily Reminder"
+        android:text="Add Daily Reminder"
         android:layout_marginBottom="16dp"
         android:textSize="16sp" />
-
-    <Button
-        android:id="@+id/btnCancelReminder"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Cancel Reminder"
-        android:textSize="16sp"
-        android:enabled="false" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvReminders"

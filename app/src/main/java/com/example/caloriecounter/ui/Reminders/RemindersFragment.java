@@ -39,8 +39,7 @@ public class RemindersFragment extends Fragment {
 
     private FragmentRemindersBinding binding;
     private ReminderManager reminderManager;
-    private TextView tvCurrentReminder;
-    private Button btnSetReminder, btnCancelReminder;
+    private Button btnSetReminder;
 
     private ReminderViewModel reminderViewModel;
     private RemindersAdapter remindersAdapter;
@@ -58,17 +57,13 @@ public class RemindersFragment extends Fragment {
         binding = FragmentRemindersBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        tvCurrentReminder = binding.textNotifications;
         btnSetReminder = binding.btnSetReminder;
-        btnCancelReminder = binding.btnCancelReminder;
 
         reminderManager = new ReminderManager(requireContext());
         reminderViewModel = new ViewModelProvider(this).get(ReminderViewModel.class);
 
         btnSetReminder.setOnClickListener(v -> chooseReminderThenTime());
-        btnCancelReminder.setOnClickListener(v -> cancelReminder());
 
-        updateReminderStatus();
         return root;
     }
 
@@ -102,30 +97,11 @@ public class RemindersFragment extends Fragment {
         String label = "Daily reminder at " + String.format("%02d:%02d", hour, minute);
         reminderViewModel.addReminder(label);
 
-        updateReminderStatus();
-
         Toast.makeText(getContext(),
                 "Reminder set for " + String.format("%02d:%02d", hour, minute),
                 Toast.LENGTH_SHORT).show();
     }
 
-    private void cancelReminder() {
-        reminderManager.cancelReminder();
-        updateReminderStatus();
-        Toast.makeText(getContext(), "Reminder cancelled", Toast.LENGTH_SHORT).show();
-    }
-
-    private void updateReminderStatus() {
-        Pair<Integer, Integer> time = reminderManager.getReminderTime();
-        if (time != null) {
-            tvCurrentReminder.setText("Daily reminder set for: "
-                    + String.format("%02d:%02d", time.first, time.second));
-            btnCancelReminder.setEnabled(true);
-        } else {
-            tvCurrentReminder.setText("No reminder set");
-            btnCancelReminder.setEnabled(false);
-        }
-    }
 
     private void chooseReminderThenTime() {
         String[] options = {
