@@ -5,7 +5,6 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,7 +45,7 @@ public class RemindersFragment extends Fragment {
 
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted) showTimePickerDialog();
+                if (isGranted) chooseReminderThenTime();
                 else Toast.makeText(getContext(), "Notification permission is required.", Toast.LENGTH_LONG).show();
             });
 
@@ -62,9 +61,22 @@ public class RemindersFragment extends Fragment {
         reminderManager = new ReminderManager(requireContext());
         reminderViewModel = new ViewModelProvider(this).get(ReminderViewModel.class);
 
-        btnSetReminder.setOnClickListener(v -> chooseReminderThenTime());
+        btnSetReminder.setOnClickListener(v -> requestNotiPermissionThenChoose());
 
         return root;
+    }
+
+    private void requestNotiPermissionThenChoose() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (ContextCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+                return;
+            }
+        }
+
+        chooseReminderThenTime();
     }
 
     @Override
@@ -82,25 +94,6 @@ public class RemindersFragment extends Fragment {
         );
     }
 
-    private void showTimePickerDialog() {
-        Calendar current = Calendar.getInstance();
-        int hour = current.get(Calendar.HOUR_OF_DAY);
-        int minute = current.get(Calendar.MINUTE);
-
-        new TimePickerDialog(getContext(), (tp, h, m) -> setReminder(h, m),
-                hour, minute, false).show();
-    }
-
-    private void setReminder(int hour, int minute) {
-        reminderManager.setDailyReminder(hour, minute);
-
-        String label = "Daily reminder at " + String.format("%02d:%02d", hour, minute);
-        reminderViewModel.addReminder(label);
-
-        Toast.makeText(getContext(),
-                "Reminder set for " + String.format("%02d:%02d", hour, minute),
-                Toast.LENGTH_SHORT).show();
-    }
 
 
     private void chooseReminderThenTime() {
@@ -127,6 +120,8 @@ public class RemindersFragment extends Fragment {
                 .show();
     }
 
+
+
     private void showCustomReminderDialog() {
         final androidx.appcompat.widget.AppCompatEditText input =
                 new androidx.appcompat.widget.AppCompatEditText(requireContext());
@@ -150,6 +145,8 @@ public class RemindersFragment extends Fragment {
                 .show();
     }
 
+
+
     private void pickTimeForReminder(String message) {
         Calendar current = Calendar.getInstance();
         int hour = current.get(Calendar.HOUR_OF_DAY);
@@ -158,9 +155,14 @@ public class RemindersFragment extends Fragment {
         new TimePickerDialog(requireContext(), (tp, h, m) -> {
 
             String fullReminder = message + " at " + String.format("%02d:%02d", h, m);
+
+            // save to list display
             reminderViewModel.addReminder(fullReminder);
 
-            reminderManager.setDailyReminder(h, m);
+            // schedule alarm WITH MESSAGE
+            // Add a new reminder (multiple reminders supported)
+            reminderManager.addReminder(h, m, message);
+
 
             Toast.makeText(getContext(),
                     "Reminder set: " + fullReminder,
@@ -169,17 +171,40 @@ public class RemindersFragment extends Fragment {
         }, hour, minute, false).show();
     }
 
+
+
     private void confirmDelete(int position) {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Delete Reminder")
                 .setMessage("Are you sure?")
-                .setPositiveButton("Delete", (d, w) ->
-                        reminderViewModel.deleteReminder(position))
+                .setPositiveButton("Delete", (d, w) -> {
+                    // Get the reminder message from ViewModel
+                    String fullReminder = reminderViewModel.getReminders().getValue().get(position);
+
+                    // Cancel the corresponding alarm
+                    // NOTE: ReminderManager stores requestCode based on hour, minute, and message
+                    // We'll need to parse hour & minute from the displayed string
+                    String[] parts = fullReminder.split(" at ");
+                    if (parts.length == 2) {
+                        String message = parts[0];
+                        String[] timeParts = parts[1].split(":");
+                        int hour = Integer.parseInt(timeParts[0]);
+                        int minute = Integer.parseInt(timeParts[1]);
+
+                        // Cancel specific reminder
+                        int requestCode = (hour * 60 + minute) + message.hashCode();
+                        reminderManager.cancelReminder(requestCode);
+                    }
+
+                    // Remove from UI list
+                    reminderViewModel.deleteReminder(position);
+                })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    // ------------------------ ADAPTER ------------------------
+
+
 
     public static class RemindersAdapter extends RecyclerView.Adapter<RemindersAdapter.ViewHolder> {
 
@@ -200,9 +225,7 @@ public class RemindersFragment extends Fragment {
         }
 
         @Override
-        public int getItemCount() {
-            return reminders.size();
-        }
+        public int getItemCount() { return reminders.size(); }
 
         @NonNull
         @Override
@@ -230,15 +253,13 @@ public class RemindersFragment extends Fragment {
         }
     }
 
-    // ------------------------ VIEWMODEL ------------------------
+
 
     public static class ReminderViewModel extends ViewModel {
         private final MutableLiveData<List<String>> reminders =
                 new MutableLiveData<>(new ArrayList<>());
 
-        LiveData<List<String>> getReminders() {
-            return reminders;
-        }
+        LiveData<List<String>> getReminders() { return reminders; }
 
         void addReminder(String r) {
             List<String> list = new ArrayList<>(reminders.getValue());

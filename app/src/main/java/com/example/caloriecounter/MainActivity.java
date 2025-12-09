@@ -1,10 +1,13 @@
 package com.example.caloriecounter;
 
 import android.app.AlarmManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 
 import com.example.caloriecounter.services.MidnightResetReceiver;
@@ -32,6 +35,9 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // 🔔 CREATE NOTIFICATION CHANNEL (you needed this)
+        createNotificationChannel();
+
         BottomNavigationView navView = findViewById(R.id.nav_view);
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
                 R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications)
@@ -49,6 +55,21 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction(Intent.ACTION_DATE_CHANGED);
         filter.addAction(Intent.ACTION_TIME_CHANGED);
         registerReceiver(midnightReceiver, filter);
+    }
+
+    // ✅ Notification Channel Code
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    "reminder_channel",                     // ID
+                    "Reminder Notifications",               // Name
+                    NotificationManager.IMPORTANCE_HIGH      // Importance
+            );
+            channel.setDescription("Daily reminder notifications");
+
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            manager.createNotificationChannel(channel);
+        }
     }
 
     private void setupMidnightReset() {
