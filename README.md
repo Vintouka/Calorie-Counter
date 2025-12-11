@@ -1,6 +1,6 @@
 # Calorie Counter
 # Description of Application 
-This project is a android application created in Android-Studio built using Java, with intended prupoose is to be able to provide the users with a method to be able to track and maintain their caloric goals throiughg input of various food items, which the user will store and record the items name, caloric vaLue, and quantoty of item, to meet a set caloric goal throughout the day. The appllication will also havbe access to a calendar feature which will allowq the user to be able to view previous entries on previous days and keep a tab on wether their goals have or have not been met. Furthermore the application also provides the use of a notificatin feature which the user could use, enabling them to be able to set reminders throughout the day and allow custom messges to be sent to remind trhem of any specific needs that need to be attended too. 
+This project is a android application created in Android-Studio built using Java, with the intended purpose to be able to provide users with a method to be able to track and maintain their caloric goals through input of various food items, in which the user will store and record the items name, caloric vaLue, and quantity of item, to meet a set caloric goal throughout the day. The application will also have access to a calendar feature which will allow the user to be able to view previous entries on previous days and keep a tab on wether their goals have or have not been met. Furthermore the application also provides the use of a notificatin feature which the user could use, enabling them to be able to set reminders throughout the day and allow custom messges to be sent to remind them of any specific needs that need to be attended too. 
 
 #File Structuere 
 
@@ -25,7 +25,7 @@ This project is a android application created in Android-Studio built using Java
         │   │   └── NotificationHelper.java 
         |   |   |___RemidersViewModel.java
 
-These files contain the codes implemented disregarding other files where the User Interface was created with each file corresponding to the 3 main pages of the applicatin that being the Goals Page where the user sets their caloric intake goal with some hard coded presets that the user may use if they are uncertain about what goal they should follow.
+These files contain the codes implemented throughout the development process,  disregarding other files where the User Interface was created, with each file corresponding to the 3 main pages of the applicatin that being the Goals Page, Overview Page, and Reminders Page. With the Goals page the user can set their caloric intake goal for the day by manually inputing the goal or they may set a goal with some hard coded presets that the user may use if they are uncertain about what goal they should follow while also implementing a calendar feature which shows the days where the user goal has or has not been met allowing the user to see previous entries from prior days.
 
 #Caloric Presets code 
 
@@ -45,10 +45,10 @@ These files contain the codes implemented disregarding other files where the Use
         presets.add(new CaloriePreset("Weight Gain Male", 2500, 3200));
         presets.add(new CaloriePreset("Weight Gain Female", 2000, 2600));
         
-The Overview Page allows the usder to see the progress that they have towardds their daily caloric intake goal as well as prvides them with the option to input any foods they have eaten which updates the pogres bar and is saved upon entry which allows the usere to be able to enter the same irtem again and view it in a previous dayl. 
+The Overview Page allows the user to see the progress that they have towardds their daily caloric intake goal as well as provides them with the option to input any foods they have eaten which updates the progress bar and items are saved upon entry which allows the usere to be able to enter the same item again and view it in a previous day. 
 
 #Overview Code save data 
-The application saves the user data even if the application is suspended alloqwing the user ot be able to view previous entries in the calnedae and the entriesd of that saem day 
+The application saves the user data even if the application is suspended allowing the user to be able to view previous entries in the calendar and the entries of that same day 
 
      private void loadCalorieGoals() {
         SharedPreferences prefs = requireActivity()
@@ -69,7 +69,7 @@ The application saves the user data even if the application is suspended alloqwi
         }
     }
 
-The Reminders or notificatin portion of the application allows the app to send notificatinos to the users phone given by reminders the user can implement where trhe user can chose a preset message or by entering a custom message. Which then the user can choose a time using the clock feature added to set a specific time they would like the notificaation to be sent, allowing them to set up multiple reminders and have the app remind them to enter their, breakfeast, lunch, or dinner entries or any other personalized message.
+The Reminders or notificatin portion of the application allows the app to send notificatinos to the users phone, given by reminders the user can implement where the user can choose a preset message or by entering a custom message. Which then the user can choose a time using the clock feature added to set a specific time they would like the notification to be sent, allowing them to set up multiple reminders and have the app remind them to enter their, breakfeast, lunch, or dinner entries or any other personalized message.
 
 #Reminders scheduling code 
         private void scheduleAlarm(int hour, int minute, String message, int requestCode) {
