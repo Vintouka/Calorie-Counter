@@ -7,24 +7,23 @@ This project is an Android application created in Android Studio built using Jav
 
     app/
         └── java/com.example.caloriecounter/
- 
-        ├── ui/
-        │   ├── Goals/
-        │   │   └── CustomCalendarView.java 
-        |   |   ├── GoalsViewModel.java
-        │   │   └── GoalsFragment.java
-        |   |   |___DayDetailFragment.java
-        |   | OverView/
-        │   │   ├── EntreiesAdapter.java
-        │   │   └── OverviewFragmeent.java
-        |   |   |__ OverviewViewModel.java
-        │   ├── Reminders/
-        │   │   ├── ReminderFragment.java
-        │   │   ├── ReminderManager.java
-        │   │   ├── ReminderReceiver.java
-        │   │   ├── ReminderService.java
-        │   │   └── NotificationHelper.java 
-        |   |   |___RemidersViewModel.java
+            ├── ui/
+            │   ├── Goals/
+            │   │   └── CustomCalendarView.java 
+            |   |   ├── GoalsViewModel.java
+            │   │   └── GoalsFragment.java
+            |   |   |___DayDetailFragment.java
+            |   | OverView/
+            │   │   ├── EntreiesAdapter.java
+            │   │   └── OverviewFragmeent.java
+            |   |   |__ OverviewViewModel.java
+            │   ├── Reminders/
+            │   │   ├── ReminderFragment.java
+            │   │   ├── ReminderManager.java
+            │   │   ├── ReminderReceiver.java
+            │   │   ├── ReminderService.java
+            │   │   └── NotificationHelper.java 
+            |   |   |___RemidersViewModel.java
 
 These files contain the codes implemented throughout the development process, disregarding other files where the User Interface was created, with each file corresponding to the 3 main pages of the application, that being the Goals Page, Overview Page, and Reminders Page. With the Goals page, the user can set their caloric intake goal for the day by manually inputting the goal or they may set a goal with some hard-coded presets that the user may use if they are uncertain about what goal they should follow while also implementing a calendar feature which shows the days where the user goal has or has not been met, allowing the user to see previous entries from prior days.
 
