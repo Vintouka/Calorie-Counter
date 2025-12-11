@@ -47,7 +47,7 @@ These files contain the codes implemented disregarding other files where the Use
         
 The Overview Page allows the usder to see the progress that they have towardds their daily caloric intake goal as well as prvides them with the option to input any foods they have eaten which updates the pogres bar and is saved upon entry which allows the usere to be able to enter the same irtem again and view it in a previous dayl. 
 
-#Overview Code 
+#Overview Code save data 
 The application saves the user data even if the application is suspended alloqwing the user ot be able to view previous entries in the calnedae and the entriesd of that saem day 
 
      private void loadCalorieGoals() {
@@ -69,5 +69,34 @@ The application saves the user data even if the application is suspended alloqwi
         }
     }
 
-The Reminders or notificatin portin of the application  
+The Reminders or notificatin portion of the application allows the app to send notificatinos to the users phone given by reminders the user can implement where trhe user can chose a preset message or by entering a custom message. Which then the user can choose a time using the clock feature added to set a specific time they would like the notificaation to be sent, allowing them to set up multiple reminders and have the app remind them to enter their, breakfeast, lunch, or dinner entries or any other personalized message.
+
+#Reminders scheduling code 
+        private void scheduleAlarm(int hour, int minute, String message, int requestCode) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, hour);
+        calendar.set(Calendar.MINUTE, minute);
+        calendar.set(Calendar.SECOND, 0);
+
+        if (calendar.before(Calendar.getInstance())) {
+            calendar.add(Calendar.DATE, 1);
+        }
+
+        Intent intent = new Intent(context, ReminderReceiver.class);
+        intent.putExtra("message", message);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        alarmManager.setRepeating(
+                AlarmManager.RTC_WAKEUP,
+                calendar.getTimeInMillis(),
+                AlarmManager.INTERVAL_DAY,
+                pendingIntent
+        );
+    }
 
